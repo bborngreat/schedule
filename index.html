@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Weekly Schedule</title>
+
+    <!-- PWA manifest & theme -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1e1e2f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <style>
+        /* ===== FONTS ===== */
+        @font-face {
+            font-family: 'Neue Roman';
+            src: url('./Neue-Roman.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'Coolvetica';
+            src: url('./Coolvetica Rg.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        /* ===== RESET & DARK MODE BASE ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0b0f1a;
+            min-height: 100vh;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 0.75rem;
+            font-family: 'Neue Roman', Helvetica, Arial, sans-serif;
+            color: #eaeef2;
+            line-height: 1.4;
+        }
+
+        /* ===== MAIN CARD ===== */
+        .card {
+            max-width: 600px;
+            width: 100%;
+            background: #1e1e2f;
+            border-radius: 32px;
+            box-shadow: 0 25px 40px -20px rgba(0,0,0,0.7);
+            padding: 1.8rem 1.5rem 2rem;
+            border: 1px solid #2c2c40;
+            margin: 0.5rem 0;
+        }
+
+        /* ===== HEADINGS ===== */
+        h1 {
+            font-family: 'Coolvetica', 'Impact', 'Helvetica Bold', sans-serif;
+            font-size: 2.4rem;
+            font-weight: 400;
+            letter-spacing: -0.02em;
+            color: #ffffff;
+            margin-bottom: 0.25rem;
+            line-height: 1.1;
+            text-align: center;
+        }
+
+        .current-day {
+            font-family: 'Coolvetica', sans-serif;
+            font-size: 1.8rem;
+            color: #7a9ac0;
+            text-align: center;
+            margin-bottom: 0.15rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            line-height: 1.2;
+        }
+
+        .date-badge {
+            text-align: center;
+            margin-bottom: 1.8rem;
+            font-size: 0.9rem;
+            color: #b0c4de;
+            background: rgba(42, 42, 58, 0.5);
+            padding: 0.4rem 1.2rem;
+            border-radius: 40px;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+            border: 1px solid #3a3a55;
+            font-family: 'Neue Roman', sans-serif;
+            backdrop-filter: blur(4px);
+        }
+
+        /* ===== TIMELINE CARDS (mobile-first) ===== */
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 1.2rem 0 1.5rem;
+        }
+
+        .task-card {
+            background: #2a2a3a;
+            border-radius: 24px;
+            border: 1px solid #3a3a55;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.3);
+            padding: 1rem 1.2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px dashed #3e4a5a;
+            padding-bottom: 8px;
+        }
+
+        .task-name {
+            font-family: 'Coolvetica', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 400;
+            color: #ffffff;
+            letter-spacing: 0.3px;
+            line-height: 1.2;
+        }
+
+        .task-name small {
+            font-family: 'Neue Roman', sans-serif;
+            font-size: 0.85rem;
+            color: #9bb5d4;
+            margin-left: 6px;
+            font-weight: normal;
+        }
+
+        .duration-badge {
+            background: #1e2a38;
+            color: #7a9ac0;
+            font-family: 'Coolvetica', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 400;
+            padding: 0.3rem 0.9rem;
+            border-radius: 40px;
+            border: 1px solid #4a607a;
+            white-space: nowrap;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+
+        .execution-section {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .execution-label {
+            font-family: 'Coolvetica', sans-serif;
+            font-size: 0.9rem;
+            color: #9bb5d4;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .time-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .time-badge {
+            background: #3a4a60;
+            color: #ffffff;
+            font-family: 'Coolvetica', sans-serif;
+            font-size: 1rem;
+            font-weight: 400;
+            padding: 0.4rem 1.2rem;
+            border-radius: 50px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            border: 1px solid #5a6e8a;
+            backdrop-filter: blur(2px);
+            transition: all 0.15s;
+            display: inline-block;
+        }
+
+        .time-badge.highlight {
+            background: #4c6a88;
+            border-color: #7a9ac0;
+        }
+
+        /* ===== TOTAL CARD ===== */
+        .total-card {
+            background: #222236;
+            border-radius: 24px;
+            border: 1px solid #4a4a6a;
+            box-shadow: 0 8px 18px -6px black;
+            padding: 1.2rem 1.5rem;
+            margin-top: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .total-label {
+            font-family: 'Coolvetica', sans-serif;
+            font-size: 1.4rem;
+            color: #ffffff;
+            letter-spacing: 0.5px;
+        }
+
+        .total-value {
+            background: #4c6a88;
+            color: white;
+            font-family: 'Coolvetica', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 400;
+            padding: 0.5rem 1.5rem;
+            border-radius: 60px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+            border: 1px solid #7a9ac0;
+        }
+
+        /* ===== FOOTER NOTE ===== */
+        .footer-note {
+            margin-top: 2rem;
+            font-size: 0.85rem;
+            color: #8aa0b8;
+            text-align: center;
+            border-top: 1px dashed #2e4055;
+            padding-top: 1.2rem;
+            font-style: italic;
+            letter-spacing: 0.2px;
+        }
+
+        /* ===== SMALL PHONES ===== */
+        @media (max-width: 400px) {
+            body {
+                padding: 0.5rem;
+            }
+            
+            .card {
+                padding: 1.2rem 1rem 1.5rem;
+                border-radius: 28px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .current-day {
+                font-size: 1.5rem;
+            }
+            
+            .date-badge {
+                font-size: 0.8rem;
+                padding: 0.3rem 1rem;
+                margin-bottom: 1.2rem;
+            }
+            
+            .task-card {
+                padding: 0.9rem 1rem;
+            }
+            
+            .task-name {
+                font-size: 1.1rem;
+            }
+            
+            .duration-badge {
+                font-size: 0.95rem;
+                padding: 0.2rem 0.7rem;
+            }
+            
+            .time-badge {
+                font-size: 0.9rem;
+                padding: 0.3rem 1rem;
+            }
+            
+            .total-card {
+                padding: 1rem 1.2rem;
+            }
+            
+            .total-label {
+                font-size: 1.2rem;
+            }
+            
+            .total-value {
+                font-size: 1.1rem;
+                padding: 0.4rem 1.2rem;
+            }
+        }
+
+        /* ===== TABLETS AND UP (minimal adjustments) ===== */
+        @media (min-width: 600px) {
+            .card {
+                padding: 2rem 2rem 2.4rem;
+            }
+            
+            .task-card {
+                padding: 1.2rem 1.5rem;
+            }
+            
+            .time-stack {
+                gap: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1>📅 Weekly Schedule</h1>
+    <div id="currentDayDisplay" class="current-day"></div>
+    <div id="dateDisplay" class="date-badge"></div>
+
+    <!-- Mobile-optimized card layout -->
+    <div id="timelineContainer" class="timeline">
+        <!-- filled by JavaScript -->
+    </div>
+
+    <div id="totalContainer">
+        <!-- total card will be injected here -->
+    </div>
+
+    <div class="footer-note">
+        Weekly Schedule | Bright Borngreat © 2026.
+    </div>
+</div>
+
+<script>
+    (function() {
+        // Days of the week
+        const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        
+        // Task data from the spreadsheet - hardcoded with pre-calculated durations (in minutes)
+        const timelineData = {
+            tasks: [
+                {
+                    name: "Read BBSc Book",
+                    durations: [60, 60, 40, 60, 40, 90, 90],
+                    times: [
+                        "4:00-5:00",
+                        "4:00-5:00",
+                        "4:00-4:40",
+                        "4:00-5:00",
+                        "4:00-4:40",
+                        "10:00-11:30",
+                        "10:00-11:30"
+                    ]
+                },
+                {
+                    name: "Execute AA™ Task",
+                    durations: [10, 40, 60, 40, 40, 120, 120],
+                    times: [
+                        "5:20-5:30",
+                        "5:20-6:00",
+                        "5:00-6:00",
+                        "5:20-6:00",
+                        "5:00-5:40",
+                        "12:00-1:20, 2:00-2:40",
+                        "12:00-1:20, 2:00-2:40"
+                    ]
+                },
+                {
+                    name: "Playbook Draft",
+                    durations: [70, 60, 40, 50, 60, 90, 90],
+                    times: [
+                        "9:20-10:30",
+                        "9:20-10:20",
+                        "9:20-10:00",
+                        "9:20-10:10",
+                        "9:20-10:20",
+                        "7:00-7:30, 8:00-9:00",
+                        "7:00-7:30, 8:00-9:00"
+                    ]
+                },
+                {
+                    name: "YouTube/Strategy",
+                    durations: [40, 40, 50, 30, 40, 90, 90],
+                    times: [
+                        "10:40-11:20",
+                        "10:40-11:20",
+                        "10:10-11:00",
+                        "10:20-10:50",
+                        "10:40-11:20",
+                        "9:30-11:00",
+                        "9:30-11:00"
+                    ]
+                },
+                {
+                    name: "WASSCE",
+                    durations: [30, 30, 40, 60, 40, 40, 40],
+                    times: [
+                        "11:30-12:00",
+                        "11:30-12:00",
+                        "11:20-12:00",
+                        "11:00-12:00",
+                        "11:20-12:00",
+                        "11:20-12:00",
+                        "11:20-12:00"
+                    ]
+                }
+            ]
+        };
+
+        // ----- DOM elements -----
+        const timelineContainer = document.getElementById('timelineContainer');
+        const totalContainer = document.getElementById('totalContainer');
+        const currentDayDisplay = document.getElementById('currentDayDisplay');
+        const dateDisplay = document.getElementById('dateDisplay');
+
+        // ----- Helper function to format duration -----
+        function formatDuration(minutes) {
+            if (minutes < 60) {
+                return `${minutes} min`;
+            } else {
+                const hours = Math.floor(minutes / 60);
+                const mins = minutes % 60;
+                if (mins === 0) {
+                    return `${hours} hr`;
+                } else {
+                    return `${hours} hr ${mins} min`;
+                }
+            }
+        }
+
+        // ----- Helper function to format time display (handle stacked times) -----
+        function formatTimeDisplay(timeString) {
+            if (timeString.includes(',')) {
+                const times = timeString.split(',').map(t => t.trim());
+                let html = '<div class="time-stack">';
+                times.forEach(t => {
+                    html += `<span class="time-badge">${t}</span>`;
+                });
+                html += '</div>';
+                return html;
+            } else {
+                return `<span class="time-badge">${timeString}</span>`;
+            }
+        }
+
+        // ----- Get current day index (0 = Monday, 6 = Sunday) -----
+        function getCurrentDayIndex() {
+            const today = new Date();
+            const day = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+            return day === 0 ? 6 : day - 1;
+        }
+
+        // ----- Update date display -----
+        function updateDateDisplay() {
+            const today = new Date();
+            const options = { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            dateDisplay.textContent = today.toLocaleDateString('en-US', options);
+        }
+
+        // ----- Update current day display -----
+        function updateCurrentDayDisplay(dayIndex) {
+            currentDayDisplay.textContent = daysOfWeek[dayIndex];
+        }
+
+        // ----- Render timeline cards for current day -----
+        function renderTimeline(dayIndex) {
+            const tasks = timelineData.tasks;
+            
+            // Build task cards
+            let timelineHtml = '';
+
+            for (let i = 0; i < tasks.length; i++) {
+                const task = tasks[i];
+                const duration = task.durations[dayIndex];
+                const timeString = task.times[dayIndex];
+                
+                // Check if this is a weekend double-time task
+                const isWeekend = dayIndex >= 5; // Saturday or Sunday
+                
+                timelineHtml += `
+                    <div class="task-card">
+                        <div class="task-header">
+                            <span class="task-name">${task.name}</span>
+                            <span class="duration-badge">${formatDuration(duration)}</span>
+                        </div>
+                        <div class="execution-section">
+                            <span class="execution-label">⏰ Execution Time</span>
+                            ${formatTimeDisplay(timeString)}
+                        </div>
+                    </div>
+                `;
+            }
+
+            timelineContainer.innerHTML = timelineHtml;
+
+            // Calculate and render total
+            const totalMinutes = tasks.reduce((sum, task) => sum + task.durations[dayIndex], 0);
+            const totalHtml = `
+                <div class="total-card">
+                    <span class="total-label">📊 Total Time</span>
+                    <span class="total-value">${formatDuration(totalMinutes)}</span>
+                </div>
+            `;
+            totalContainer.innerHTML = totalHtml;
+            
+            // Update the displayed current day
+            updateCurrentDayDisplay(dayIndex);
+        }
+
+        // ----- Initialize -----
+        function init() {
+            const currentDayIndex = getCurrentDayIndex();
+            updateDateDisplay();
+            renderTimeline(currentDayIndex);
+        }
+
+        // Initialize the app
+        init();
+
+        // Optional: refresh at midnight to show new day (if app stays open)
+        const now = new Date();
+        const msUntilMidnight = (24 - now.getHours()) * 3600000 - now.getMinutes() * 60000 - now.getSeconds() * 1000 - now.getMilliseconds();
+        setTimeout(() => {
+            const newDayIndex = getCurrentDayIndex();
+            updateDateDisplay();
+            renderTimeline(newDayIndex);
+        }, msUntilMidnight);
+        
+    })();
+</script>
+
+<!-- Register Service Worker -->
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('Service Worker registered:', reg.scope))
+                .catch(err => console.error('Service Worker registration failed:', err));
+        });
+    }
+</script>
+</body>
+</html>
