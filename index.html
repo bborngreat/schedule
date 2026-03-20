@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Weekly Schedule</title>
+    <title>Weekly Schedule · Holiday Mode</title>
 
     <!-- PWA manifest & theme -->
     <link rel="manifest" href="manifest.json">
@@ -204,7 +204,8 @@
             border: 1px solid #4a4a6a;
             box-shadow: 0 8px 18px -6px black;
             padding: 1.2rem 1.5rem;
-            margin-top: 1.5rem;
+            margin-top: 0.75rem;
+            margin-bottom: 1rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -229,9 +230,85 @@
             border: 1px solid #7a9ac0;
         }
 
+        /* ===== HOLIDAY MODE TOGGLE (custom toggle pill) ===== */
+        .holiday-toggle-card {
+            background: #2a2a3a;
+            border-radius: 60px;
+            border: 1px solid #4a607a;
+            padding: 0.5rem 1rem 0.5rem 1.5rem;
+            margin: 0.5rem 0 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            backdrop-filter: blur(4px);
+            transition: background 0.2s ease;
+        }
+
+        .toggle-label {
+            font-family: 'Coolvetica', sans-serif;
+            font-size: 1.15rem;
+            letter-spacing: 0.3px;
+            color: #e0edf9;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toggle-label span:first-child {
+            font-size: 1.3rem;
+        }
+
+        /* The switch - custom design */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 28px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #3a3a55;
+            transition: 0.25s;
+            border-radius: 34px;
+            border: 1px solid #6c8aac;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 3px;
+            bottom: 2px;
+            background-color: #ffffff;
+            transition: 0.25s;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        input:checked + .slider {
+            background-color: #5d8bb8;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+
         /* ===== FOOTER NOTE ===== */
         .footer-note {
-            margin-top: 2rem;
+            margin-top: 0.8rem;
             font-size: 0.85rem;
             color: #8aa0b8;
             text-align: center;
@@ -296,9 +373,26 @@
                 font-size: 1.1rem;
                 padding: 0.4rem 1.2rem;
             }
+
+            .toggle-label {
+                font-size: 1rem;
+            }
+
+            .switch {
+                width: 48px;
+                height: 26px;
+            }
+
+            .slider:before {
+                height: 20px;
+                width: 20px;
+            }
+
+            input:checked + .slider:before {
+                transform: translateX(22px);
+            }
         }
 
-        /* ===== TABLETS AND UP (minimal adjustments) ===== */
         @media (min-width: 600px) {
             .card {
                 padding: 2rem 2rem 2.4rem;
@@ -329,6 +423,17 @@
         <!-- total card will be injected here -->
     </div>
 
+    <!-- ===== HOLIDAY MODE TOGGLE (below total, above footer) ===== -->
+    <div id="holidayToggleWrapper" class="holiday-toggle-card">
+        <div class="toggle-label">
+            <span>🏖️</span> Holiday Mode
+        </div>
+        <label class="switch">
+            <input type="checkbox" id="holidayToggleCheckbox">
+            <span class="slider"></span>
+        </label>
+    </div>
+
     <div class="footer-note">
         Weekly Schedule | Bright Borngreat © 2026.
     </div>
@@ -336,10 +441,10 @@
 
 <script>
     (function() {
-        // Days of the week
+        // Days of the week (index 0 = Monday ... 6 = Sunday)
         const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
         
-        // Task data from the spreadsheet - hardcoded with pre-calculated durations (in minutes)
+        // ---------- MASTER SCHEDULE DATA (same as original, accurate) ----------
         const timelineData = {
             tasks: [
                 {
@@ -410,13 +515,7 @@
             ]
         };
 
-        // ----- DOM elements -----
-        const timelineContainer = document.getElementById('timelineContainer');
-        const totalContainer = document.getElementById('totalContainer');
-        const currentDayDisplay = document.getElementById('currentDayDisplay');
-        const dateDisplay = document.getElementById('dateDisplay');
-
-        // ----- Helper function to format duration -----
+        // ----- Helper: format duration (minutes) -----
         function formatDuration(minutes) {
             if (minutes < 60) {
                 return `${minutes} min`;
@@ -431,8 +530,9 @@
             }
         }
 
-        // ----- Helper function to format time display (handle stacked times) -----
+        // ----- Helper: format time display (handles multiple slots separated by comma) -----
         function formatTimeDisplay(timeString) {
+            if (!timeString) return `<span class="time-badge">—</span>`;
             if (timeString.includes(',')) {
                 const times = timeString.split(',').map(t => t.trim());
                 let html = '<div class="time-stack">';
@@ -446,48 +546,88 @@
             }
         }
 
-        // ----- Get current day index (0 = Monday, 6 = Sunday) -----
-        function getCurrentDayIndex() {
+        // ----- Get current REAL day index (0 = Monday, 6 = Sunday) based on actual date -----
+        function getRealDayIndex() {
             const today = new Date();
-            const day = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+            const day = today.getDay(); // 0 = Sunday, 1 = Monday ...
+            // convert to our index: Monday=0, Sunday=6
             return day === 0 ? 6 : day - 1;
         }
 
-        // ----- Update date display -----
-        function updateDateDisplay() {
-            const today = new Date();
-            const options = { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            };
-            dateDisplay.textContent = today.toLocaleDateString('en-US', options);
+        // ----- Get effective day index: if Holiday Mode ON, force weekend index (Saturday=5) for schedule but keep real day display -----
+        // However: we need schedule data for "weekend". But weekend has two days: Saturday (index5) and Sunday (index6).
+        // Requirement: holiday mode must show the weekend schedule (Sat/Sun tasks). For consistency we pick Saturday schedule as base? 
+        // Actually the original weekend schedule (Saturday & Sunday) are identical in your data? Check: Saturday (index5) and Sunday (index6) durations/times are identical.
+        // To be safe, we will pick SATURDAY (index5) schedule whenever Holiday Mode is active — because both weekend days have identical tasks/time allocations.
+        // That matches the requirement: "task list and time allocations must update to show that of the weekend schedule."
+        function getEffectiveScheduleIndex(holidayModeActive, realDayIdx) {
+            if (holidayModeActive) {
+                // weekend schedule = Saturday (index 5) data; identical to Sunday but we pick a consistent weekend reference.
+                return 5;   // Saturday schedule = full weekend pattern (identical to Sunday as per source)
+            }
+            return realDayIdx;   // normal day schedule
         }
 
-        // ----- Update current day display -----
-        function updateCurrentDayDisplay(dayIndex) {
-            currentDayDisplay.textContent = daysOfWeek[dayIndex];
+        // ----- DOM elements -----
+        const timelineContainer = document.getElementById('timelineContainer');
+        const totalContainer = document.getElementById('totalContainer');
+        const currentDayDisplay = document.getElementById('currentDayDisplay');
+        const dateDisplay = document.getElementById('dateDisplay');
+        const holidayToggle = document.getElementById('holidayToggleCheckbox');
+
+        // ----- LOCALSTORAGE key for persistent holiday mode -----
+        const HOLIDAY_STORAGE_KEY = 'weekly_schedule_holiday_mode';
+
+        // ----- Load holiday mode state from localStorage -----
+        function loadHolidayModeState() {
+            const stored = localStorage.getItem(HOLIDAY_STORAGE_KEY);
+            if (stored !== null) {
+                return stored === 'true';
+            }
+            return false; // default OFF
         }
 
-        // ----- Render timeline cards for current day -----
-        function renderTimeline(dayIndex) {
-            const tasks = timelineData.tasks;
+        // ----- Save holiday mode state to localStorage -----
+        function saveHolidayModeState(isActive) {
+            localStorage.setItem(HOLIDAY_STORAGE_KEY, isActive.toString());
+        }
+
+        // ----- Update UI: day name, date badge, and schedule based on holiday mode + real day -----
+        function updateFullUI() {
+            const realDayIndex = getRealDayIndex();                 // real day (Monday..Sunday)
+            const holidayActive = holidayToggle.checked;           // current toggle state
             
-            // Build task cards
+            // Real day name and date must ALWAYS reflect actual day (no change)
+            const realDayName = daysOfWeek[realDayIndex];
+            currentDayDisplay.textContent = realDayName;
+            
+            // Format today's date properly
+            const today = new Date();
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            dateDisplay.textContent = today.toLocaleDateString('en-US', options);
+            
+            // Determine which schedule to show (weekend = index5 if holiday active, else real index)
+            const scheduleIndex = getEffectiveScheduleIndex(holidayActive, realDayIndex);
+            
+            // Render task cards using scheduleIndex (scheduleIndex points to correct column: either weekend Sat or actual day)
+            renderTimelineByIndex(scheduleIndex);
+        }
+        
+        // ----- Core render: receives target schedule index (0..6) and builds tasks & total -----
+        function renderTimelineByIndex(scheduleIndex) {
+            const tasks = timelineData.tasks;
             let timelineHtml = '';
-
+            
             for (let i = 0; i < tasks.length; i++) {
                 const task = tasks[i];
-                const duration = task.durations[dayIndex];
-                const timeString = task.times[dayIndex];
-                
-                // Check if this is a weekend double-time task
-                const isWeekend = dayIndex >= 5; // Saturday or Sunday
+                // durations and times are arrays length 7. Safe access
+                const duration = task.durations[scheduleIndex];
+                const timeString = task.times[scheduleIndex];
                 
                 timelineHtml += `
                     <div class="task-card">
                         <div class="task-header">
-                            <span class="task-name">${task.name}</span>
+                            <span class="task-name">${escapeHtml(task.name)}</span>
                             <span class="duration-badge">${formatDuration(duration)}</span>
                         </div>
                         <div class="execution-section">
@@ -497,11 +637,11 @@
                     </div>
                 `;
             }
-
+            
             timelineContainer.innerHTML = timelineHtml;
-
-            // Calculate and render total
-            const totalMinutes = tasks.reduce((sum, task) => sum + task.durations[dayIndex], 0);
+            
+            // total minutes based on selected scheduleIndex
+            const totalMinutes = tasks.reduce((sum, task) => sum + task.durations[scheduleIndex], 0);
             const totalHtml = `
                 <div class="total-card">
                     <span class="total-label">📊 Total Time</span>
@@ -509,34 +649,72 @@
                 </div>
             `;
             totalContainer.innerHTML = totalHtml;
-            
-            // Update the displayed current day
-            updateCurrentDayDisplay(dayIndex);
         }
-
-        // ----- Initialize -----
-        function init() {
-            const currentDayIndex = getCurrentDayIndex();
-            updateDateDisplay();
-            renderTimeline(currentDayIndex);
-        }
-
-        // Initialize the app
-        init();
-
-        // Optional: refresh at midnight to show new day (if app stays open)
-        const now = new Date();
-        const msUntilMidnight = (24 - now.getHours()) * 3600000 - now.getMinutes() * 60000 - now.getSeconds() * 1000 - now.getMilliseconds();
-        setTimeout(() => {
-            const newDayIndex = getCurrentDayIndex();
-            updateDateDisplay();
-            renderTimeline(newDayIndex);
-        }, msUntilMidnight);
         
+        // simple escape to avoid injection (task names are safe but good practice)
+        function escapeHtml(str) {
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+                return c;
+            });
+        }
+        
+        // ----- Event listener for toggle: update UI and persist state -----
+        function onHolidayToggleChange() {
+            const isActive = holidayToggle.checked;
+            saveHolidayModeState(isActive);
+            updateFullUI();   // re-render schedule based on new mode + keep real day/date
+        }
+        
+        // ----- Listen for system midnight refresh (update real day and date) -----
+        function scheduleMidnightRefresh() {
+            const now = new Date();
+            const msUntilMidnight = (24 - now.getHours()) * 3600000 - now.getMinutes() * 60000 - now.getSeconds() * 1000 - now.getMilliseconds();
+            setTimeout(() => {
+                // when day changes, real day index updates, we refresh UI (keeping holiday mode state)
+                updateFullUI();
+                // recursively schedule next midnight
+                scheduleMidnightRefresh();
+            }, msUntilMidnight);
+        }
+        
+        // ----- Optional: handle when app becomes visible after long background (visibility API) -----
+        function handleVisibilityChange() {
+            if (!document.hidden) {
+                // day might have changed while hidden; refresh UI
+                updateFullUI();
+            }
+        }
+        
+        // ----- Initialize entire app -----
+        function init() {
+            // load persisted holiday mode state
+            const storedHolidayActive = loadHolidayModeState();
+            holidayToggle.checked = storedHolidayActive;
+            
+            // attach change event
+            holidayToggle.addEventListener('change', onHolidayToggleChange);
+            
+            // initial full render (day name, date, and schedule according to holiday mode)
+            updateFullUI();
+            
+            // set midnight auto-refresh to keep day/date in sync (also resets schedule if real day changes)
+            scheduleMidnightRefresh();
+            
+            // listen to visibility changes (user returns to tab after day passes)
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+        }
+        
+        // start everything
+        init();
     })();
 </script>
 
-<!-- Register Service Worker -->
+<!-- Register Service Worker (keeping original PWA capability) -->
 <script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
